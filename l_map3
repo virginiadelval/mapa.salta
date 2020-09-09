@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+	<meta charset="utf-8" />
+	 <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+<head>
+		<link rel="stylesheet"	href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/ion-rangeslider@2.2.0/css/ion.rangeSlider.css" />
+<link rel="stylesheet" href="https://unpkg.com/ion-rangeslider@2.2.0/css/ion.rangeSlider.skinNice.css" />	
+
+<link rel="stylesheet" href="dist/leaflet.css" />
+<link rel="stylesheet" href="src/leaflet-panel-layers.css" />
+<link rel="stylesheet" href="css/barralateral.css">
+
+
+<script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
+<script src="dist/leaflet-panel-layers.src.js"></script>
+<script src="src/leaflet-panel-layers.js"></script>
+<script src="js/L.Control.Appearance.js"></script>
+<script src="js/jquery-3.5.1.js"></script>
+
+
+<style>
+	#map {
+	width: 100%;
+	height: 600px;
+	box-shadow: 5px 5px 5px #888;
+	}
+		.legend {
+	padding: 6px 8px;
+	font: 14px/16px Arial, Helvetica, sans-serif;
+	background: white;
+	background: rgba(255,255,255,0.8);
+	box-shadow: 0 0 15px rgba(0,0,0,0.2);
+	border-radius: 5px;
+	}
+	legend h2 {
+	margin: 0 0 5px;
+	color: #777;
+	}
+</style>
+
+</head>
+<body>
+	<div id="map"></div>
+<script>
+	// con VAR se crean las capas a visualizar => L.tileLayer.wms es para vincular al geoserver //
+	var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
+			+ 'contributors',
+			maxZoom: 18
+	});
+	var GoogleSatelite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>'+ 'contributors',
+            maxZoom: 18
+        });
+	var CartoDB = L.tileLayer('http://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+            opacity: 1.0,
+            attribution: '<a href="https://cartodb.com/basemaps/">Map tiles by CartoDB, under CC BY 3.0. Data by OpenStreetMap, under ODbL.</a>',
+            maxZoom: 18,
+            });
+	var DarkMatter = L.tileLayer('http://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+            opacity: 1.0,
+            attribution: '<a href="https://cartodb.com/basemaps/">Map tiles by CartoDB, under CC BY 3.0. Data by OpenStreetMap, under ODbL.</a>',
+            maxZoom: 18,
+        });
+        //VARIABLES DEMOGRAFICAS//
+	var total = L.tileLayer.wms("http://190.3.14.59:8080/geoserver/wms",{
+		active: true,
+		layers: 'social:poblacion_total2010',
+		format: 'image/png',
+		transparent: true,
+		opacity: 0.5
+
+	});
+	var hogar = L.tileLayer.wms("http://190.3.14.59:8080/geoserver/wms",{
+		active: true,
+		layers: 'social:poblacion_hogares2010',
+		format: 'image/png',
+		transparent: true,
+		opacity: 0.5
+	});
+	var mujeres = L.tileLayer.wms("http://190.3.14.59:8080/geoserver/wms",{
+		active: true,
+		layers: 'social:poblacion_mujeres2010',
+		format: 'image/png',
+		transparent: true,
+		opacity: 0.5
+	});
+	var varones = L.tileLayer.wms("http://190.3.14.59:8080/geoserver/wms",{
+		active: true,
+		layers: 'social:poblacion_varones2010',
+		format: 'image/png',
+		transparent: true,
+		opacity: 0.5
+	});
+	var NBI = L.tileLayer.wms("http://190.3.14.59:8080/geoserver/wms",{
+		active: true,
+		layers: 'social:NBI_urbano_2010',
+		format: 'image/png',
+		transparent: true,
+        opacity: 0.5
+	});
+	//otras variables//
+	
+	var catastros = L.tileLayer.wms("http://190.3.14.59:8080/geoserver/wms", {
+		active: false,
+		layers: 'infra_base:01_catastros_mar2020',
+		format: 'image/png',
+		transparent: true,
+		opacity: 0.5
+
+	});
+		
+
+	// baseMaps y OverlMaps son para crear la leyenda, pero con L.control.layers es que se pone en el mapa. Cuando comienza el Corchete [estoy indicando un nuevo grupo. //
+	var baseLayers = [
+	{name: "DarkMatter",
+	layer: DarkMatter},
+	{
+	name: "CartoDB",
+	layer: CartoDB },
+	{
+		name: "Open Street Map",
+		layer: osm
+	},
+	{
+		name: "Google Satelite",
+		layer: L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>'+ 'contributors',
+            maxZoom: 18
+		})
+	}];
+
+	var overlayMaps = [{
+		group: "VARIABLES DEMOGRAFICAS",
+		layers: [
+			{
+				active: false,
+				name: "Total Poblacional (2010)",
+				layer: total,
+				transparent: true,
+				opacity: 0.7,
+						},
+						{
+				active: false,
+				name: "Total de Hogares (2010)",
+				layer: hogar,
+				transparent: true,
+				opacity: 0.5,
+						},
+						{
+				active: false,
+				name: "Total de Mujeres (2010)",
+				layer: mujeres,
+						},
+						{
+				active: false,
+				name: "Total de Hombres (2010)",
+				layer: varones,
+						},
+						{
+				active: false,
+				name: "Total de NBI por Fraccion Censal(2010)",
+				layer: NBI,
+						}
+					]
+				},
+				{
+		group: "CAPA BASE DE CATASTROS",
+		layers: [
+				{
+					active:false,
+					name: "Catastro Actualización Marzo 2020",
+					layer: catastros,
+				},
+			]}
+			];
+ // se crea el mapa//
+	var map = L.map('map', {
+		center: [-24.79303,-65.41527],
+		zoom: 13,
+		zoomControl: false,
+		layers:[DarkMatter , total],
+	});
+	//se le agregan los controles//
+		L.control.zoom ({position: 'topright'}). addTo (map);
+		L.control.scale({position: 'bottomleft',
+		imperial: false}).addTo(map);
+	
+
+		//panel de control agregado//
+	var panelLayers = new L.Control.PanelLayers(baseLayers, overlayMaps, 
+		{compact: true,
+	//collapsed: true,
+	collapsibleGroups: true,
+	position: 'topleft',
+});
+
+map.addControl(panelLayers);
+
+// INSERTAR la leyenda//
+	//posicion de la leyenda//
+	var legend = L.control({position: 'bottomright'});
+	//contenido de la Leyenda//
+	legend.onAdd = function (map) {
+	var div = L.DomUtil.create('div', 'info legend');
+	div.innerHTML += '<ul><li><h5>Leyenda</h5></li><li>Total Poblacional (2010)<br><img src=" http://190.3.14.59:8080/geoserver/social/wms?service=WMS&version=1.1.0&request=GetLegendGraphic&width=20&height=20&layer=social:poblacion_total2010&bbox=-65.493277,-24.864779,-65.379901,-24.768900&srcwidth=768&srcheight=330&srs=EPSG:4326&format=image/png&legend_options=fontName:Arial;countMatched:true;fontAntiAliasing:true" alt="legend" width="100" height="90"></br></li><li>CATASTROS POR CATEGORIA<br><img src=" http://190.3.14.59:8080/geoserver/infra_base/wms?service=WMS&version=1.1.0&request=GetLegendGraphic&width=20&height=20&layer=infra_base:01_catastros_mar2020&bbox=-65.60339289382473,-25.2967180508596,-65.02561175509184,-24.656942039882715&srcwidth=768&srcheight=330&srs=EPSG:4326&format=image/png&legend_options=fontName:Arial;countMatched:true;fontAntiAliasing:true" alt="legend" width="120" height="90"></br></li></ul>';
+	
+	
+	return div;
+	};
+	legend.addTo(map);
+
+
+</script>
+
+	</script>
+
+</body>
+</html>
