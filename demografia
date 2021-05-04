@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+	<meta charset="utf-8" />
+	 <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no" />
+<head>
+		<link rel="stylesheet"	href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/ion-rangeslider@2.2.0/css/ion.rangeSlider.css" />
+<link rel="stylesheet" href="https://unpkg.com/ion-rangeslider@2.2.0/css/ion.rangeSlider.skinNice.css" />	
+<link rel="stylesheet" href="dist/leaflet.css" />
+<link rel="stylesheet" href="src/leaflet-panel-layers.css" />
+<link rel="stylesheet" href="src/L.Control.HtmlLegend.css" />
+
+<!--argenmapa-->
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-1.8.2.js"></script>
+<script type="text/javascript" src="https://www.ign.gob.ar/argenmap/argenmap.jquery.min.js"></script>
+
+
+<script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
+<script src="dist/leaflet-panel-layers.src.js"></script>
+<script src="src/leaflet-panel-layers.js"></script>
+<script src="js/L.Control.Appearance.js"></script>
+<script src="js/jquery-3.5.1.js"></script>
+<script src="src/L.Control.HtmlLegend.js"></script>
+<!-- full screen-->
+<script src="js/Control.FullScreen.js"></script>
+<!-- plugin wms-->
+<script src="src/leaflet.wms.js"></script>
+
+<link rel="stylesheet" type="text/css" href="css/leaflet.css">
+<style>
+	#map {
+	width: 100%;
+	height: 580px;
+	box-shadow: 5px 5px 5px #888;
+	}
+
+	.fullscreen-icon { background-image: url(images/icon-fullscreen.png); }
+		.leaflet-retina .fullscreen-icon { background-image: url(images/icon-fullscreen-2x.png); background-size: 26px 26px; }
+		/* one selector per rule as explained here : http://www.sitepoint.com/html5-full-screen-api/ */
+		.leaflet-container:-webkit-full-screen { width: 100% !important; height: 100% !important; z-index: 99999; }
+		.leaflet-container:-ms-fullscreen { width: 100% !important; height: 100% !important; z-index: 99999; }
+		.leaflet-container:full-screen { width: 100% !important; height: 100% !important; z-index: 99999; }
+		.leaflet-container:fullscreen { width: 100% !important; height: 100% !important; z-index: 99999; }
+		.leaflet-pseudo-fullscreen { position: fixed !important; width: 100% !important; height: 100% !important; top: 0px !important; left: 0px !important; z-index: 99999; }
+	
+		
+</style>
+
+</head>
+<body>
+	<div id="map"></div>
+<script>
+	// con VAR se crean las capas a visualizar => L.tileLayer.wms es para vincular al geoserver //
+	var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
+			+ 'contributors',
+			maxZoom: 18
+	});
+	var GoogleSatelite = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>'+ 'contributors',
+            maxZoom: 18
+        });
+
+		var argenmap = L.tileLayer('https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/mapabase_gris@EPSG%3A3857@png/{z}/{x}/{-y}.png', {
+            opacity: 1.0,
+            attribution: '<a href="https://www.ign.gob.ar/AreaServicios/Argenmap/IntroduccionV2"  target="_blank"> ArgenMap </a>',
+            maxZoom: 18,
+		});
+		var argenmap2 = L.tileLayer('https://wms.ign.gob.ar/geoserver/gwc/service/tms/1.0.0/capabaseargenmap@EPSG%3A3857@png/{z}/{x}/{-y}.png', {
+            opacity: 1.0,
+            attribution: '<a href="https://www.ign.gob.ar/AreaServicios/Argenmap/IntroduccionV2" target="_blank"> ArgenMap </a>',
+            maxZoom: 18,
+		});
+				
+//options recomendada para disminuir el codido//
+var options = {format: 'image/png',
+              uppercase: true,
+              transparent: true,
+              version: '1.1.1',
+              continuousWorld : true,
+              tiled: true,
+              info_format: 'text/html',
+			  opacity: 1 };
+		//llamo una vez al servidor//
+		var source = L.WMS.source("http://190.3.14.59:8080/geoserver/wms", options);
+		// llama cada capa del servidor//
+		var layer1 = source.getLayer('demografia:poblacion_total2010');
+		var layer2 = source.getLayer('demografia:poblacion_hogares2010');
+		var layer3 = source.getLayer('demografia:poblacion_mujeres2010');
+		var layer4 = source.getLayer('demografia:poblacion_varones2010');
+		var layer5 = source.getLayer('demografia:NBI_urbano_2010');		
+
+
+	// leyenda con trasparecia//
+var htmlLegend1and1 = L.control.htmllegend({
+        position: 'bottomright',
+        legends: [{
+            name: 'Total Poblacional (hab) 2010',
+            layer: layer1,
+            elements: [{
+                label: 'Total Poblacional (hab) 2010',
+                html:'<img src=http://190.3.14.59:8080/geoserver/demografia/wms?service=WMS&version=1.1.0&request=GetLegendGraphic&width=20&height=20&layer=demorgrafia:poblacion_total2010&bbox=-65.493277,-24.864779,-65.379901,-24.768900&srcwidth=768&srcheight=330&srs=EPSG:4326&format=image/png&legend_options=fontName:Times%20New%20Roman;countMatched:true;fontAntiAliasing:true alt="legend" width="100" height="90">'
+            }]
+        }],
+        collapseSimple: true,
+        detectStretched: false,
+        collapsedOnInit: true,
+        defaultOpacity: 0.9,
+        visibleIcon: 'icon icon-eye',
+        hiddenIcon: 'icon icon-eye-slash'
+    });
+	
+	var htmlLegend1and2 = L.control.htmllegend({
+        position: 'bottomright',
+        legends: [{
+            name: 'Total Población Hogares (2010)',
+            layer: layer2,
+            elements: [{
+                label: 'Total Población Hogares 2010',
+                html:'<img src=http://190.3.14.59:8080/geoserver/demografia/wms?service=WMS&version=1.1.0&request=GetLegendGraphic&width=20&height=20&layer=demografia:poblacion_hogares2010&bbox=-65.493277,-24.864779,-65.379901,-24.768900&srcwidth=768&srcheight=330&srs=EPSG:4326&format=image/png&legend_options=fontName:Times%20New%20Roman;countMatched:true;fontAntiAliasing:true alt="legend" width="100" height="90">'
+            }]
+        }],
+        collapseSimple: true,
+        detectStretched: false,
+        collapsedOnInit: true,
+        defaultOpacity: 0.9,
+        visibleIcon: 'icon icon-eye',
+        hiddenIcon: 'icon icon-eye-slash'
+    });
+    
+	// leyenda con trasparecia//
+var htmlLegend1and3 = L.control.htmllegend({
+        position: 'bottomright',
+        legends: [{
+            name: 'Total de Mujeres (2010)',
+            layer: layer3,
+            elements: [{
+                label: 'Total de Mujeres (2010)',
+                html:'<img src=http://190.3.14.59:8080/geoserver/demografia/wms?service=WMS&version=1.1.0&request=GetLegendGraphic&width=20&height=20&layer=demografia:poblacion_mujeres2010&bbox=-65.493277,-24.864779,-65.379901,-24.768900&srcwidth=768&srcheight=330&srs=EPSG:4326&format=image/png&legend_options=fontName:Times%20New%20Roman;countMatched:true;fontAntiAliasing:true alt="legend" width="100" height="90">'
+            }]
+        }],
+        collapseSimple: true,
+        detectStretched: false,
+        collapsedOnInit: true,
+        defaultOpacity: 0.9,
+        visibleIcon: 'icon icon-eye',
+        hiddenIcon: 'icon icon-eye-slash'
+    });
+// leyenda con trasparecia//
+var htmlLegend1and4 = L.control.htmllegend({
+        position: 'bottomright',
+        legends: [{
+            name: 'Total de Varones (2010)',
+            layer: layer4,
+            elements: [{
+                label: 'Total de Varones (2010)',
+                html:'<img src=http://190.3.14.59:8080/geoserver/demografia/wms?service=WMS&version=1.1.0&request=GetLegendGraphic&width=20&height=20&layer=demografia:poblacion_varones2010&bbox=-65.493277,-24.864779,-65.379901,-24.768900&srcwidth=768&srcheight=330&srs=EPSG:4326&format=image/png&legend_options=fontName:Times%20New%20Roman;countMatched:true;fontAntiAliasing:true alt="legend" width="100" height="90">'
+            }]
+        }],
+        collapseSimple: true,
+        detectStretched: false,
+        collapsedOnInit: true,
+        defaultOpacity: 0.9,
+        visibleIcon: 'icon icon-eye',
+        hiddenIcon: 'icon icon-eye-slash'
+    });
+// leyenda con trasparecia//
+var htmlLegend1and5 = L.control.htmllegend({
+        position: 'bottomright',
+        legends: [{
+            name: 'Total de NBI (2010)',
+            layer: layer5,
+            elements: [{
+                label: 'Total de NBI (2010)',
+                html:'<img src=http://190.3.14.59:8080/geoserver/demografia/wms?service=WMS&version=1.1.0&request=GetLegendGraphic&width=20&height=20&layer=demografia:NBI_urbano_2010&bbox=-65.493277,-24.864779,-65.379901,-24.768900&srcwidth=768&srcheight=330&srs=EPSG:4326&format=image/png&legend_options=fontName:Times%20New%20Roman;countMatched:true;fontAntiAliasing:true alt="legend" width="100" height="90">'
+            }]
+        }],
+        collapseSimple: true,
+        detectStretched: false,
+        collapsedOnInit: true,
+        defaultOpacity: 0.9,
+        visibleIcon: 'icon icon-eye',
+        hiddenIcon: 'icon icon-eye-slash'
+    });
+	
+		
+	// baseMaps y OverlMaps son para crear la leyenda, pero con L.control.layers es que se pone en el mapa. Cuando comienza el Corchete [estoy indicando un nuevo grupo. //
+	var baseLayers = [
+	{name: "ArgenMap",
+	layer: argenmap2},
+	{name: "ArgenMap (Gris)",
+	layer: argenmap},
+			{
+		name: "OpenStreetMap (OSM)",
+		layer: osm,
+			},
+	{
+		name: "Google Satelite",
+		layer: L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>'+ 'contributors',
+            maxZoom: 18
+		})
+	}];
+
+	var overlayMaps = [{
+		group: "VARIABLES DEMOGRAFICAS",
+		layers: [
+			{
+				
+				name: "Total Poblacional (2010)",
+				layer: layer1
+				
+						},
+						{
+				
+				name: "Total de Hogares (2010)",
+				layer: layer2
+				
+						},
+						{
+				
+				name: "Total de Mujeres (2010)",
+				layer: layer3,
+						},
+						{
+				
+				name: "Total de Varones (2010)",
+				layer: layer4
+				
+						},	{
+				
+				name: "Total de NBI (2010)",
+				layer: layer5
+				
+						},
+										
+					]
+				}
+			];
+ // se crea el mapa//
+	var map = L.map('map', {
+		center: [-24.79303,-65.41527],
+		zoom: 12,
+		//comienza el fullscreen//	
+		fullscreenControl: true,
+			fullscreenControlOptions: { 
+				title:"Mostrar en pantalla completa",
+				titleCancel:"Cancelar el modo pantalla completa",
+				position: 'topright',
+			},
+		zoomControl: false,
+		layers:[argenmap, layer1],
+	});
+
+	//se le agregan los controles//
+		L.control.zoom ({position: 'topright'}). addTo (map);
+		L.control.scale({position: 'bottomleft',
+		imperial: false}).addTo(map);
+	
+		
+		//panel de control agregado//
+	var panelLayers = new L.Control.PanelLayers(baseLayers, overlayMaps, 
+		{compact: true,
+	//collapsed: true,
+	collapsibleGroups: true,
+	position: 'topleft',
+});
+//add to map de control//
+map.addControl(panelLayers);
+map.addControl(htmlLegend1and1);
+    map.addControl(htmlLegend1and2);
+	map.addControl(htmlLegend1and3);
+	map.addControl(htmlLegend1and4);
+	map.addControl(htmlLegend1and5);
+</script>
+
+	</script>
+
+</body>
+</html>
